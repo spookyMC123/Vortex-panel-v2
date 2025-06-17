@@ -1,0 +1,9 @@
+{
+    "baseUri": "http://localhost:3000",
+    "port": 3000,
+    "domain": "localhost",
+    "mode": "production",
+    "version": "2.0",
+    "ogTitle": "Vortex-panel",
+    "ogDescription": "This is an instance of the Vortex-panel - learn more at github.com/dragonlabsdev"
+}
