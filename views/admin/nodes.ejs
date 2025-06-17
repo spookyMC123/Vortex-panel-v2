@@ -1,0 +1,743 @@
+  <%- include('../components/admin_template') %>
+  <main id="content" class="bg-gray-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Header Section -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4">
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold text-white"><%= req.translations.nodes %></h1>
+          <p class="mt-1 text-xs sm:text-sm text-gray-400">
+        </div>
+        <button id="createButton" type="button" class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 border border-transparent text-xs sm:text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 whitespace-nowrap">
+          <svg class="-ml-0.5 mr-1.5 sm:-ml-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+          </svg>
+          <%= req.translations.createNewNode %>
+        </button>
+      </div>
+
+      <!-- Stats Cards -->
+      <div id="stats" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
+        <div class="bg-gray-800 rounded-lg shadow p-4 sm:p-6">
+          <div class="flex items-center">
+            <div class="p-2 sm:p-3 rounded-full bg-indigo-500/10 text-indigo-400">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+              </svg>
+            </div>
+            <div class="ml-3 sm:ml-4">
+              <h3 class="text-xs sm:text-sm font-medium text-gray-300">Total Nodes</h3>
+              <p class="mt-1 text-xl sm:text-2xl md:text-3xl font-semibold text-white"><%= nodes.length %></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg shadow p-4 sm:p-6">
+          <div class="flex items-center">
+            <div class="p-2 sm:p-3 rounded-full bg-green-500/10 text-green-400">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <div class="ml-3 sm:ml-4">
+              <h3 class="text-xs sm:text-sm font-medium text-gray-300">Online Nodes</h3>
+              <p class="mt-1 text-xl sm:text-2xl md:text-3xl font-semibold text-white"><%= nodes.filter(node => node.status === 'Online').length %></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg shadow p-4 sm:p-6">
+          <div class="flex items-center">
+            <div class="p-2 sm:p-3 rounded-full bg-blue-500/10 text-blue-400">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div class="ml-3 sm:ml-4">
+              <h3 class="text-xs sm:text-sm font-medium text-gray-300">Server Count</h3>
+              <p class="mt-1 text-xl sm:text-2xl md:text-3xl font-semibold text-white"><%= Object.values(set).reduce((a, b) => a + b, 0) %></p>
+              <p class="mt-1 text-xs text-gray-400">
+                <% if (nodes.length > 0) { %>
+                  Avg. density: <%= (Object.values(set).reduce((a, b) => a + b, 0) / nodes.length).toFixed(2) %> servers/node
+                <% } else { %>
+                  No nodes available
+                <% } %>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Success Messages -->
+      <% if (req.query.err == "none") { %>
+        <div class="rounded-md bg-green-900/50 p-3 sm:p-4 mb-4 sm:mb-6 border border-green-800">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-4 w-4 sm:h-5 sm:w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-2 sm:ml-3">
+              <h3 class="text-xs sm:text-sm font-medium text-green-300">Success</h3>
+              <div class="mt-1 text-xs sm:text-sm text-green-200">
+                <p>The action was successfully completed.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% } %>
+
+      <% if (req.query.err == "EDITED") { %>
+        <div class="rounded-md bg-green-900/50 p-3 sm:p-4 mb-4 sm:mb-6 border border-green-800">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-4 w-4 sm:h-5 sm:w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-2 sm:ml-3">
+              <h3 class="text-xs sm:text-sm font-medium text-green-300">Success</h3>
+              <div class="mt-1 text-xs sm:text-sm text-green-200">
+                <p>The node was edited successfully.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% } %>
+
+      <!-- Nodes Table -->
+      <div id="nodeTable" class="bg-gray-800 shadow overflow-hidden rounded-lg">
+        <div class="border-b border-gray-700 px-3 py-3 sm:px-4 sm:py-4">
+          <div class="-ml-2 -mt-2 flex flex-col sm:flex-row justify-between items-start sm:items-center sm:flex-nowrap gap-2 sm:gap-0">
+            <div class="ml-2 mt-2">
+              <h3 class="text-base sm:text-lg leading-6 font-medium text-white">Nodes</h3>
+              <p class="mt-0.5 text-xs sm:text-sm text-gray-400">Manage all your nodes in one place</p>
+            </div>
+            <div class="ml-2 mt-2 sm:ml-4 sm:mt-4 flex-shrink-0 w-full sm:w-auto">
+              <div class="relative rounded-md shadow-sm">
+                <div class="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
+                  <svg class="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+                <input type="text" id="searchInput" class="bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-7 sm:pl-10 pr-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded-md text-white placeholder-gray-400" placeholder="Search nodes...">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-700">
+            <thead class="bg-gray-750">
+              <tr>
+                <th scope="col" class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Node</th>
+                <th scope="col" class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Connection</th>
+                <th scope="col" class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Servers</th>
+                <th scope="col" class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                <th scope="col" class="px-3 py-2 sm:px-4 sm:py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="bg-gray-800 divide-y divide-gray-700">
+              <% nodes.forEach(function(node) { %>
+                <tr class="hover:bg-gray-750/50 transition-colors">
+                  <td class="px-3 py-3 sm:px-4 sm:py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-md bg-gray-700 text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                        </svg>
+                      </div>
+                      <div class="ml-2 sm:ml-3">
+                        <div class="text-xs sm:text-sm font-medium text-white truncate max-w-[100px] sm:max-w-none"><%= node.name %></div>
+                        <div class="text-xs text-gray-400 truncate max-w-[100px] sm:max-w-none"><%= node.id %></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-3 py-3 sm:px-4 sm:py-4 whitespace-nowrap">
+                    <div class="text-xs sm:text-sm text-white font-mono truncate max-w-[120px] sm:max-w-none"><%= node.address %>:<%= node.port %></div>
+                    <div class="text-2xs sm:text-xs text-gray-400 mt-1">
+                      <% if (node.versionRelease) { %>
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-2xs sm:text-xs font-medium bg-green-900 text-green-200">
+                          <%= node.versionRelease %>
+                        </span>
+                      <% } else { %>
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-2xs sm:text-xs font-medium bg-gray-900 text-gray-200">
+                          Unknown version
+                        </span>
+                      <% } %>
+                    </div>
+                  </td>
+                  <td class="px-3 py-3 sm:px-4 sm:py-4 whitespace-nowrap">
+                    <div class="text-xs sm:text-sm text-white"><%= set[node.id] || 0 %></div>
+                  </td>
+                  <td class="px-3 py-3 sm:px-4 sm:py-4 whitespace-nowrap">
+                    <% if (node.status == "Online") { %>
+                      <span class="px-1.5 sm:px-2 inline-flex text-2xs sm:text-xs leading-4 sm:leading-5 font-semibold rounded-full bg-green-900 text-green-200">
+                        <span class="flex h-1.5 w-1.5 sm:h-2 sm:w-2 relative mr-1 mt-0.5 sm:mt-1">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-green-500"></span>
+                        </span>
+                        Online
+                      </span>
+                    <% } else if (node.status == "Offline") { %>
+                      <span class="px-1.5 sm:px-2 inline-flex text-2xs sm:text-xs leading-4 sm:leading-5 font-semibold rounded-full bg-gray-900 text-gray-200">
+                        <span class="flex h-1.5 w-1.5 sm:h-2 sm:w-2 relative mr-1 mt-0.5 sm:mt-1">
+                          <span class="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-gray-500"></span>
+                        </span>
+                        Offline
+                      </span>
+                    <% } else { %>
+                      <span class="px-1.5 sm:px-2 inline-flex text-2xs sm:text-xs leading-4 sm:leading-5 font-semibold rounded-full bg-yellow-900 text-yellow-200">
+                        <span class="flex h-1.5 w-1.5 sm:h-2 sm:w-2 relative mr-1 mt-0.5 sm:mt-1">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-yellow-500"></span>
+                        </span>
+                        Unstable
+                      </span>
+                    <% } %>
+                  </td>
+                  <td class="px-3 py-3 sm:px-4 sm:py-4 whitespace-nowrap text-right text-xs sm:text-sm font-medium">
+                    <div class="flex justify-end space-x-1 sm:space-x-2">
+                      <button onclick="configure('<%= node.id %>')" class="text-indigo-400 hover:text-indigo-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+                        </svg>
+                      </button>
+                      <a href="./node/<%= node.id %>" class="text-blue-400 hover:text-blue-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
+                      </a>
+                      <button onclick="deletenode('<%= node.id %>')" class="text-red-400 hover:text-red-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Create Node Form -->
+      <div id="nodeForm" class="hidden mt-6 sm:mt-8 bg-gray-800 shadow overflow-hidden rounded-lg">
+        <div class="px-3 py-3 sm:px-4 sm:py-4 border-b border-gray-700">
+          <h3 class="text-base sm:text-lg leading-6 font-medium text-white">Create New Node</h3>
+          <p class="mt-0.5 text-xs sm:text-sm text-gray-400">Configure a new node to add to your cluster</p>
+        </div>
+        <div class="px-3 py-3 sm:p-4 sm:py-4 sm:px-6">
+          <form class="space-y-4 sm:space-y-6">
+            <div class="grid grid-cols-1 gap-y-3 gap-x-3 sm:gap-y-4 sm:gap-x-4 sm:grid-cols-6">
+              <div class="sm:col-span-3">
+                <label for="nodeName" class="block text-xs sm:text-sm font-medium text-gray-300">Node Name</label>
+                <div class="mt-1">
+                  <input type="text" id="nodeName" class="bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm text-xs sm:text-sm rounded-md text-white placeholder-gray-400 px-2.5 py-1.5 sm:px-3 sm:py-2" placeholder="us-east-1">
+                </div>
+              </div>
+
+              <div class="sm:col-span-3">
+                <label for="nodeAddress" class="block text-xs sm:text-sm font-medium text-gray-300">Address</label>
+                <div class="mt-1">
+                  <input type="text" id="nodeAddress" class="bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm text-xs sm:text-sm rounded-md text-white placeholder-gray-400 px-2.5 py-1.5 sm:px-3 sm:py-2" placeholder="192.168.1.1 or node.example.com">
+                </div>
+              </div>
+
+              <div class="sm:col-span-2">
+                <label for="nodePort" class="block text-xs sm:text-sm font-medium text-gray-300">Daemon Port</label>
+                <div class="mt-1">
+                  <input type="number" id="nodePort" class="bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm text-xs sm:text-sm rounded-md text-white placeholder-gray-400 px-2.5 py-1.5 sm:px-3 sm:py-2" placeholder="3002" value="3002">
+                </div>
+              </div>
+
+              <div class="sm:col-span-2">
+                <label for="nodeRam" class="block text-xs sm:text-sm font-medium text-gray-300">Memory (GB)</label>
+                <div class="mt-1">
+                  <input type="number" id="nodeRam" class="bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm text-xs sm:text-sm rounded-md text-white placeholder-gray-400 px-2.5 py-1.5 sm:px-3 sm:py-2" placeholder="64">
+                </div>
+              </div>
+
+              <div class="sm:col-span-2">
+                <label for="nodeDisk" class="block text-xs sm:text-sm font-medium text-gray-300">Disk (GB)</label>
+                <div class="mt-1">
+                  <input type="number" id="nodeDisk" class="bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm text-xs sm:text-sm rounded-md text-white placeholder-gray-400 px-2.5 py-1.5 sm:px-3 sm:py-2" placeholder="500">
+                </div>
+              </div>
+
+              <div class="sm:col-span-3">
+                <label for="nodeProcessor" class="block text-xs sm:text-sm font-medium text-gray-300">Processor</label>
+                <div class="mt-1">
+                  <input type="text" id="nodeProcessor" class="bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm text-xs sm:text-sm rounded-md text-white placeholder-gray-400 px-2.5 py-1.5 sm:px-3 sm:py-2" placeholder="AMD Ryzen 9 5950X">
+                </div>
+              </div>
+
+              <div class="sm:col-span-3">
+                <label for="tagInput" class="block text-xs sm:text-sm font-medium text-gray-300">Tags</label>
+                <div class="mt-1">
+                  <div id="tagContainer" class="flex flex-wrap gap-1 sm:gap-2 mb-1 sm:mb-2"></div>
+                  <input type="text" id="tagInput" class="bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm text-xs sm:text-sm rounded-md text-white placeholder-gray-400 px-2.5 py-1.5 sm:px-3 sm:py-2" placeholder="Add tags (press Enter)">
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-end space-x-2 sm:space-x-3">
+              <button type="button" id="cancelButton" class="bg-gray-700 py-1.5 px-3 sm:py-2 sm:px-4 border border-gray-600 rounded-md shadow-sm text-xs sm:text-sm font-medium text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                Cancel
+              </button>
+              <button type="button" id="createNodeBtn" class="inline-flex justify-center py-1.5 px-3 sm:py-2 sm:px-4 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                Create Node
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Configuration Modal -->
+  <div id="configModal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+      <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+      <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+      <div class="inline-block align-bottom bg-gray-800 rounded-lg px-3 pt-4 pb-3 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full sm:p-6">
+        <div>
+          <div class="mx-auto flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-green-900/30">
+            <svg class="h-5 w-5 sm:h-6 sm:w-6 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+            </svg>
+          </div>
+          <div class="mt-2 sm:mt-3 text-center sm:mt-5">
+            <h3 class="text-base sm:text-lg leading-6 font-medium text-white" id="modal-title">Node Configuration</h3>
+            <div class="mt-1 sm:mt-2">
+              <p class="text-xs sm:text-sm text-gray-400">Run this command on your node to automatically configure it:</p>
+              <div class="mt-2 sm:mt-3 bg-gray-900 rounded-lg p-2 sm:p-3">
+                <pre id="commandCode" class="text-green-400 overflow-x-auto text-xs sm:text-sm font-mono"></pre>
+              </div>
+              <p class="mt-1 text-2xs sm:text-xs text-gray-500">This token will expire in 15 minutes.</p>
+            </div>
+          </div>
+        </div>
+        <div class="mt-3 sm:mt-4 sm:grid sm:grid-cols-2 sm:gap-2 sm:gap-3 sm:grid-flow-row-dense">
+          <button id="copyBtn" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-3 py-1.5 sm:px-4 sm:py-2 bg-indigo-600 text-xs sm:text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:col-start-2">
+            Copy Command
+          </button>
+          <button id="closeModalBtn" type="button" class="mt-2 sm:mt-0 w-full inline-flex justify-center rounded-md border border-gray-700 shadow-sm px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-700 text-xs sm:text-sm font-medium text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:col-start-1">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // Toggle between table and form views
+  document.getElementById('createButton').addEventListener('click', function() {
+    document.getElementById('nodeTable').classList.add('hidden');
+    document.getElementById('stats').classList.add('hidden');
+    document.getElementById('nodeForm').classList.remove('hidden');
+    // Scroll to form for better mobile UX
+    document.getElementById('nodeForm').scrollIntoView({ behavior: 'smooth' });
+  });
+
+  document.getElementById('cancelButton').addEventListener('click', function() {
+    document.getElementById('nodeTable').classList.remove('hidden');
+    document.getElementById('stats').classList.remove('hidden');
+    document.getElementById('nodeForm').classList.add('hidden');
+    // Scroll to top for better mobile UX
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // Search functionality with debounce
+  let searchTimeout;
+  document.getElementById('searchInput').addEventListener('input', function(e) {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      const searchTerm = e.target.value.toLowerCase();
+      const rows = document.querySelectorAll('tbody tr');
+
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+          row.classList.remove('hidden');
+        } else {
+          row.classList.add('hidden');
+        }
+      });
+    }, 300); // 300ms debounce
+  });
+
+  // Tag management
+  const tagInput = document.getElementById('tagInput');
+  const tagContainer = document.getElementById('tagContainer');
+
+  tagInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const tag = tagInput.value.trim();
+      if (tag) {
+        addTag(tag);
+        tagInput.value = '';
+      }
+    }
+  });
+
+  function addTag(tag) {
+    const tagElement = document.createElement('span');
+    tagElement.className = 'inline-flex items-center px-1.5 py-0.5 rounded-full text-2xs sm:text-xs font-medium bg-indigo-900 text-indigo-200';
+    tagElement.innerHTML = `
+      ${tag}
+      <button type="button" class="ml-1 inline-flex text-indigo-400 hover:text-indigo-300 focus:outline-none">
+        <svg class="h-2.5 w-2.5 sm:h-3 sm:w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+        </svg>
+      </button>
+    `;
+
+    const removeBtn = tagElement.querySelector('button');
+    removeBtn.addEventListener('click', () => {
+      tagContainer.removeChild(tagElement);
+    });
+
+    tagContainer.appendChild(tagElement);
+  }
+
+  // Node creation with validation
+  document.getElementById('createNodeBtn').addEventListener('click', function() {
+    const name = document.getElementById('nodeName').value;
+    const tags = Array.from(document.getElementById('tagContainer').children).map(badge => badge.textContent.trim());
+    const ram = document.getElementById('nodeRam').value;
+    const disk = document.getElementById('nodeDisk').value;
+    const processor = document.getElementById('nodeProcessor').value;
+    const address = document.getElementById('nodeAddress').value;
+    const port = document.getElementById('nodePort').value;
+
+    // Validation
+    if (!name || !address || !port) {
+      alert('Please fill in all required fields (Name, Address, Port)');
+      return;
+    }
+
+    // Validate port number
+    if (port < 1 || port > 65535) {
+      alert('Port must be between 1 and 65535');
+      return;
+    }
+
+    // Validate RAM and Disk
+    if (ram && (ram <= 0 || ram > 1000)) {
+      alert('RAM must be between 1 and 1000 GB');
+      return;
+    }
+
+    if (disk && (disk <= 0 || disk > 10000)) {
+      alert('Disk space must be between 1 and 10000 GB');
+      return;
+    }
+
+    const nodeData = {
+      name,
+      tags: tags.join(', '),
+      ram,
+      disk,
+      processor,
+      address,
+      port
+    };
+
+    // Show loading state
+    const btn = document.getElementById('createNodeBtn');
+    btn.disabled = true;
+    btn.innerHTML = `
+      <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      Creating...
+    `;
+
+    fetch('/nodes/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(nodeData)
+    })
+    .then(response => {
+      if (response.ok) {
+        return response.json();
+      }
+      throw new Error('Failed to create node');
+    })
+    .then(data => {
+      window.location.href = '../admin/nodes?err=none';
+    })
+    .catch(error => {
+      console.error('Error creating node:', error);
+      alert('Error creating node: ' + error.message);
+      btn.disabled = false;
+      btn.textContent = 'Create Node';
+    });
+  });
+
+  // Node deletion with better error handling
+  async function deletenode(nodeId) {
+    try {
+      const confirmDelete = confirm('Are you sure you want to delete this node?');
+      if (!confirmDelete) return;
+
+      // Show loading state
+      const btn = document.querySelector(`button[onclick="deletenode('${nodeId}')"]`);
+      if (btn) {
+        btn.innerHTML = `
+          <svg class="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        `;
+      }
+
+      let response = await fetch('/nodes/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ nodeId })
+      });
+
+      let result = await response.json();
+
+      if (response.ok) {
+        window.location.reload();
+      } else if (result.error === "There are instances on the node") {
+        const confirmDeleteAll = confirm('There are still instances on this node. Do you want to delete all instances and remove the node?');
+
+        if (confirmDeleteAll) {
+          response = await fetch(`/nodes/delete?deleteinstances=true`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ nodeId })
+          });
+
+          result = await response.json();
+
+          if (response.ok) {
+            window.location.reload();
+          } else {
+            alert('Failed to delete node: ' + (result.message || 'Unknown error'));
+            if (btn) {
+              btn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+              `;
+            }
+          }
+        } else if (btn) {
+          btn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+          `;
+        }
+      } else {
+        alert('Failed to delete node: ' + (result.message || 'Unknown error'));
+        if (btn) {
+          btn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+          `;
+        }
+      }
+    } catch (error) {
+      console.error('Request failed:', error);
+      alert('Request failed: ' + error.message);
+    }
+  }
+
+  // Node configuration with better mobile support
+  async function configure(nodeId) {
+    try {
+      // Show loading state
+      const btn = document.querySelector(`button[onclick="configure('${nodeId}')"]`);
+      if (btn) {
+        btn.innerHTML = `
+          <svg class="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        `;
+      }
+
+      const response = await fetch(`/admin/node/${nodeId}/configure-command`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch configure command');
+      }
+      const data = await response.json();
+      showConfigModal(data.configureCommand);
+
+      if (btn) {
+        btn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+          </svg>
+        `;
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to get configuration command: ' + error.message);
+
+      const btn = document.querySelector(`button[onclick="configure('${nodeId}')"]`);
+      if (btn) {
+        btn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+          </svg>
+        `;
+      }
+    }
+  }
+
+  function showConfigModal(command) {
+    const modal = document.getElementById('configModal');
+    const commandCode = document.getElementById('commandCode');
+    const copyBtn = document.getElementById('copyBtn');
+    const closeBtn = document.getElementById('closeModalBtn');
+
+    commandCode.textContent = command;
+    modal.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+
+    // Prevent background scrolling when modal is open
+    document.addEventListener('keydown', handleEscape);
+
+    function handleEscape(e) {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    }
+
+    function closeModal() {
+      modal.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+      document.removeEventListener('keydown', handleEscape);
+    }
+
+    copyBtn.addEventListener('click', function() {
+      navigator.clipboard.writeText(command).then(() => {
+        copyBtn.textContent = 'Copied!';
+        copyBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+        copyBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+
+        setTimeout(() => {
+          copyBtn.textContent = 'Copy Command';
+          copyBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+          copyBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy: ', err);
+        // Fallback for browsers that don't support clipboard API
+        const textarea = document.createElement('textarea');
+        textarea.value = command;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy');
+          copyBtn.textContent = 'Copied!';
+          setTimeout(() => {
+            copyBtn.textContent = 'Copy Command';
+          }, 2000);
+        } catch (err) {
+          console.error('Fallback copy failed: ', err);
+          alert('Failed to copy command to clipboard');
+        }
+        document.body.removeChild(textarea);
+      });
+    });
+
+    closeBtn.addEventListener('click', closeModal);
+
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+  }
+
+  // Better mobile touch targets
+  document.querySelectorAll('button, a').forEach(element => {
+    element.classList.add('touch-target');
+  });
+
+  // Handle viewport changes
+  function handleViewportChange() {
+    if (window.innerWidth < 640) {
+      document.body.classList.add('mobile-view');
+    } else {
+      document.body.classList.remove('mobile-view');
+    }
+  }
+
+  // Initial check
+  handleViewportChange();
+
+  // Listen for resize events
+  window.addEventListener('resize', handleViewportChange);
+  </script>
+
+  <style>
+  /* Additional mobile-specific styles */
+  @media (max-width: 640px) {
+    .mobile-view table {
+      font-size: 0.8rem;
+    }
+
+    .mobile-view .text-xs {
+      font-size: 0.7rem;
+    }
+
+    .mobile-view .text-sm {
+      font-size: 0.8rem;
+    }
+
+    .touch-target {
+      min-height: 36px;
+      min-width: 36px;
+    }
+
+    .mobile-view .px-3 {
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+    }
+
+    .mobile-view .py-2 {
+      padding-top: 0.25rem;
+      padding-bottom: 0.25rem;
+    }
+  }
+
+  /* Better scrolling on mobile */
+  html {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent zoom on input focus */
+  @media screen and (max-width: 767px) {
+    input, select, textarea {
+      font-size: 16px;
+    }
+  }
+
+  /* Better table responsiveness */
+  @media (max-width: 767px) {
+    table {
+      display: block;
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+  </style>

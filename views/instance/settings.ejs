@@ -1,0 +1,1388 @@
+    <%- include('components/template') %>
+    <%- include('components/instance') %>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.js"
+        integrity="sha512-2PRgAav8Os8vLcOAh1gSaDoNLe1fAyq8/G3QSdyjFFD+OqNjLeHE/8q4+S4MEZgPsuo+itHopj+hJvqS8XUQ8A=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.css"
+        integrity="sha512-iLYuqv+v/P4u9erpk+KM83Ioe/l7SEmr7wB6g+Kg1qmEit8EShDKnKtLHlv2QXUp7GGJhmqDI+1PhJYLTsfb8w=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/addons/attach/attach.min.js"
+        integrity="sha512-43J76SR5UijcuJTzs73z8NpkyWon8a8EoV+dX6obqXW7O26Yb268H2vP6EiJjD7sWXqxS3G/YOqPyyLF9fmqgA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/addons/fit/fit.min.js"
+        integrity="sha512-+wh8VA1djpWk3Dj9/IJDu6Ufi4vVQ0zxLv9Vmfo70AbmYFJm0z3NLnV98vdRKBdPDV4Kwpi7EZdr8mDY9L8JIA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <style>
+        /* Improved Mobile Styles */
+        @media (max-width: 768px) {
+            .mobile-stack {
+                flex-direction: column !important;
+            }
+            .mobile-full-width {
+                width: 100% !important;
+                margin-right: 0 !important;
+                margin-left: 0 !important;
+            }
+            .mobile-px-4 {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }
+            .mobile-mt-4 {
+                margin-top: 1rem !important;
+            }
+            .mobile-text-center {
+                text-align: center !important;
+            }
+            #terminal {
+                height: 300px !important;
+            }
+            .player-action-buttons {
+                grid-template-columns: repeat(3, 1fr) !important;
+            }
+        }
+
+        /* General Improvements */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .xterm-viewport {
+            overflow-y: hidden !important;
+            border-radius: 0 0 0.75rem 0.75rem;
+        }
+
+        /* Player Management */
+        #player-management {
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        #player-management.collapsed {
+            max-height: 60px;
+        }
+
+        .toggle-player-management {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .player-card {
+            transition: all 0.2s ease;
+        }
+
+        .player-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .player-action-buttons {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 0.5rem;
+        }
+
+        /* Status Box with Controls */
+        .status-box {
+            position: relative;
+            min-height: 120px;
+        }
+
+        .status-controls {
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .status-controls button {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            padding: 0;
+        }
+
+        /* Loading Popup */
+        #loadingPopup {
+            display: none;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        #loadingPopup.active {
+            display: flex;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #loadingBar {
+            transition: width 0.4s;
+        }
+
+        /* Console Improvements */
+        #terminal-container {
+            border-radius: 0.75rem;
+            background: #101010;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #terminal-header {
+            background: #151515;
+            border-radius: 0.75rem 0.75rem 0 0;
+            padding: 0.75rem 1rem;
+            font-family: monospace;
+            color: #aaa;
+            font-size: 0.875rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #input {
+            border-radius: 0 0 0.75rem 0.75rem;
+            background: #151515;
+            border: none;
+            border-top: 1px solid #252525;
+        }
+
+        /* Online Players List */
+        .online-players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 0.5rem;
+        }
+
+        /* Charts */
+        canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* Uptime badges */
+        .uptime-badge {
+            min-width: 40px;
+            text-align: center;
+        }
+
+        /* Player avatar placeholder */
+        .player-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #3b82f6;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+    </style>
+
+    <main id="content" class="mobile-px-4">
+       <!-- Connection Error Banner -->
+       <div class="rounded-xl bg-red-800/10 px-4 py-6 mt-4 mb-6 hidden" id="daemonIsDown">
+            <div class="flex">
+                <div class="flex-shrink-0 ml-1.5">
+                    <svg class="animate-spin mt-2 h-5 w-5 text-red-400" xmlns="http://www3.org/0/svg"
+                        fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
+                </div>
+                <div class="ml-5">
+                    <h3 class="text-sm font-medium text-red-400"><%= req.translations.connectionFailure %></h3>
+                    <div class="text-sm text-red-400/50">
+                        <p><%= req.translations.connectionFailureText %></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Player Management Section -->
+        <div id="player-management" class="bg-white/5 rounded-xl p-6 w-full mb-6">
+            <div class="flex justify-between items-center mb-4 toggle-player-management">
+                <h2 class="text-lg font-semibold text-white flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    Player Management
+                </h2>
+                <svg id="toggle-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 transform rotate-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </div>
+
+            <div id="player-management-content">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <div class="mb-4">
+                            <label for="player-name" class="block text-sm font-medium text-gray-300 mb-2">Player Name</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="player-name" class="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Enter player name">
+                                <button onclick="refreshPlayerList()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    Refresh
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-black/20 rounded-lg p-4">
+                            <h3 class="text-sm font-medium text-gray-300 mb-3">Quick Actions</h3>
+                            <div class="player-action-buttons">
+                                <button onclick="executePlayerAction('kick')" class="px-2 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition text-sm flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    </svg>
+                                    Kick
+                                </button>
+                                <button onclick="executePlayerAction('ban')" class="px-2 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition text-sm flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                    </svg>
+                                    Ban
+                                </button>
+                                <button onclick="executePlayerAction('pardon')" class="px-2 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition text-sm flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Unban
+                                </button>
+                                <button onclick="executePlayerAction('op')" class="px-2 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                                    </svg>
+                                    OP
+                                </button>
+                                <button onclick="executePlayerAction('deop')" class="px-2 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition text-sm flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                                    </svg>
+                                    De-OP
+                                </button>
+                                <button onclick="executePlayerAction('whitelist add')" class="px-2 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition text-sm flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    </svg>
+                                    Whitelist
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-medium text-gray-300 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728m-9.9-2.829a5 5 0 010-7.07m7.072 0a5 5 0 010 7.07M13 12a1 1 0 11-2 0 1 1 0 012 0z" />
+                                </svg>
+                                Online Players
+                            </h3>
+                            <span id="playerCount" class="text-xs bg-green-600/20 text-green-400 px-2 py-1 rounded-full">online</span>
+                        </div>
+                        <div id="online-players" class="bg-black/20 rounded-lg p-3 h-48 overflow-y-auto">
+                            <div class="online-players-grid" id="players-grid">
+                                <p class="text-sm text-gray-400 text-center col-span-2 mt-16">No players online or data not available</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Player Management -->
+                <div class="mt-6 pt-6 border-t border-white/10">
+                    <h3 class="text-sm font-medium text-gray-300 mb-3 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Advanced Player Management
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Custom Command</label>
+                            <div class="flex">
+                                <input type="text" id="custom-command" class="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-l-lg text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="e.g. gamemode creative">
+                                <button onclick="executeCustomCommand()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-r-lg transition text-sm">
+                                    Execute
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Ban Reason</label>
+                            <input type="text" id="ban-reason" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Optional ban reason">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Kick Reason</label>
+                            <input type="text" id="kick-reason" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Optional kick reason">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Console and Status Section -->
+        <div class="flex flex-col lg:flex-row gap-6 mb-6">
+            <!-- Console -->
+            <div class="w-full lg:w-2/3">
+                <div id="terminal-container" class="shadow-lg">
+                    <div id="terminal-header">
+                        <span>Server Console</span>
+                        <span class="text-xs">Interactive terminal</span>
+                    </div>
+                    <div id="terminal" class="h-96"></div>
+                    <input id="input" type="text" autocomplete="off" placeholder="<%= req.translations.SendACommand %>"
+                        class="w-full px-4 py-3 text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder:font-medium placeholder:text-neutral-500">
+                </div>
+            </div>
+
+            <!-- Status and Server Stats -->
+            <div class="w-full lg:w-1/3 space-y-6">
+                <!-- Status Card -->
+                <div class="bg-white/5 rounded-xl px-4 py-5 shadow sm:p-6 h-48 relative overflow-hidden status-box">
+                    <canvas id="statusChart"></canvas>
+                    <div class="relative z-10 h-full flex flex-col">
+                        <div>
+                            <h2 class="text-sm font-medium text-neutral-400"><%= req.translations.status %></h2>
+                            <p id="status" class="mt-1 text-2xl font-medium tracking-tight text-white">-</p>
+                            <p id="statusDetails" class="text-sm text-neutral-400 mt-2">Checking server status...</p>
+                        </div>
+
+                        <!-- Controls moved to status box -->
+                        <div class="status-controls">
+                            <button id="startButton" type="button" title="Start Server"
+                                class="bg-emerald-600 hover:bg-emerald-500 text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5">
+                                    <path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button id="restartButton" type="button" title="Restart Server"
+                                class="bg-white/20 hover:bg-white/30 text-white">
+                                <svg xmlns="http://www3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5">
+                                    <path fill-rule="evenodd" d="M4.755 10.059a7.5 7.5 0 0 1 12.548-3.364l1.903 1.903h-3.183a.75.75 0 1 0 0 1.5h4.992a.75.75 0 0 0 .75-.75V4.356a.75.75 0 0 0-1.5 0v3.18l-1.9-1.9A9 9 0 0 0 3.306 9.67a.75.75 0 1 0 1.45.388Zm15.408 3.352a.75.75 0 0 0-.919.53 7.5 7.5 0 0 1-12.548 3.364l-1.902-1.903h3.183a.75.75 0 0 0 0-1.5H2.984a.75.75 0 0 0-.75.75v4.992a.75.75 0 0 0 1.5 0v-3.18l1.9 1.9a9 9 0 0 0 15.059-4.035.75.75 0 0 0-.53-.918Z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button id="stopButton" type="button" title="Stop Server"
+                                class="bg-red-600 hover:bg-red-500 text-white">
+                                <svg xmlns="http://www3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5">
+                                    <path fill-rule="evenodd" d="M4.5 7.5a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-9a3 3 0 0 1-3-3v-9Z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Server Stats -->
+                <div class="bg-white/5 rounded-xl p-6">
+                    <h2 class="text-lg font-semibold text-white mb-4 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Server Statistics
+                    </h2>
+
+                    <div class="space-y-4">
+                        <!-- Enhanced Uptime Section -->
+                        <div>
+                            <div class="flex justify-between items-center text-sm text-gray-400 mb-1">
+                                <span class="flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Uptime
+                                </span>
+                                <div class="flex items-center">
+                                    <span id="uptime-days" class="uptime-badge bg-blue-600/10 text-blue-400 px-1.5 py-0.5 rounded text-xs mr-1">0d</span>
+                                    <span id="uptime-hours" class="uptime-badge bg-blue-600/10 text-blue-400 px-1.5 py-0.5 rounded text-xs mr-1">0h</span>
+                                    <span id="uptime-minutes" class="uptime-badge bg-blue-600/10 text-blue-400 px-1.5 py-0.5 rounded text-xs mr-1">0m</span>
+                                    <span id="uptime-seconds" class="uptime-badge bg-blue-600/10 text-blue-400 px-1.5 py-0.5 rounded text-xs">0s</span>
+                                </div>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-1.5">
+                                <div id="uptime-bar" class="bg-blue-500 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>Last started: <span id="last-started">-</span></span>
+                                <span id="uptime-percent">0% uptime</span>
+                            </div>
+                        </div>
+
+                        <!-- TPS Section -->
+                        <div>
+                            <div class="flex justify-between text-sm text-gray-400 mb-1">
+                                <span>TPS (ticks per second)</span>
+                                <span id="tps">-</span>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-1.5">
+                                <div id="tps-bar" class="bg-green-500 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>Performance</span>
+                                <span id="tps-status">-</span>
+                            </div>
+                        </div>
+
+                        <!-- CPU Section -->
+                        <div>
+                            <div class="flex justify-between text-sm text-gray-400 mb-1">
+                                <span>CPU Usage</span>
+                                <span id="cpuUsage">-</span>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-1.5">
+                                <div id="cpu-bar" class="bg-yellow-500 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>Cores: <span id="cpu-cores">-</span></span>
+                                <span id="cpu-status">-</span>
+                            </div>
+                        </div>
+
+                        <!-- Memory Section -->
+                        <div>
+                            <div class="flex justify-between text-sm text-gray-400 mb-1">
+                                <span>Memory Usage</span>
+                                <span id="memoryUsage">-</span>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-1.5">
+                                <div id="memory-bar" class="bg-purple-500 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>Limit: <span id="memory-limit">-</span></span>
+                                <span id="memory-status">-</span>
+                            </div>
+                        </div>
+
+                        <!-- Command History -->
+                        <div class="pt-4 border-t border-white/10">
+                            <h3 class="text-sm font-medium text-gray-300 mb-2">Recent Commands</h3>
+                            <div id="command-history" class="text-sm text-gray-400 space-y-1 max-h-32 overflow-y-auto">
+                                <p class="text-center py-4">No commands executed yet</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Popup -->
+    <div id="loadingPopup" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+       <div class="bg-white rounded-xl p-8 max-w-md w-full transform scale-95 transition-transform duration-300">
+           <h2 class="text-2xl font-medium mb-4 text-neutral-800">Reinstalling Server</h2>
+           <div class="mb-4">
+               <div class="w-full bg-neutral-200 rounded-full h-2.5">
+                   <div id="loadingBar" class="bg-neutral-400 h-2.5 rounded-full" style="width: 0%"></div>
+               </div>
+           </div>
+           <p id="loadingMessage" class="text-center text-neutral-600">Initializing...</p>
+       </div>
+    </div>
+
+    <!-- Alert Toast -->
+    <div id="alertToast" class="fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 opacity-0 transform translate-x-8 transition-all duration-300 hidden">
+        <div class="flex items-center">
+            <svg id="alertIcon" class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+            </svg>
+            <div>
+                <h3 id="alertTitle" class="font-medium"></h3>
+                <p id="alertMessage" class="text-sm"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Player Action Confirmation Modal -->
+    <div id="playerActionModal" class="modal-overlay">
+        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md">
+            <h3 id="playerActionTitle" class="text-lg font-medium text-white mb-4"></h3>
+            <p id="playerActionMessage" class="text-gray-300 mb-6"></p>
+            <div class="flex justify-end space-x-3">
+                <button onclick="document.getElementById('playerActionModal').classList.remove('active')" class="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition">
+                    Cancel
+                </button>
+                <button id="confirmPlayerAction" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced Player Management Functions
+        function executePlayerAction(action) {
+            const playerName = document.getElementById('player-name').value.trim();
+            if (!playerName) {
+                showAlert('error', 'Error', 'Please enter a player name');
+                return;
+            }
+
+            let command;
+            let successMessage = '';
+            let confirmationMessage = '';
+
+            switch(action) {
+                case 'ban':
+                    const banReason = document.getElementById('ban-reason').value.trim();
+                    command = `ban ${playerName} ${banReason || ''}`.trim();
+                    successMessage = `Player ${playerName} has been banned`;
+                    confirmationMessage = `Are you sure you want to ban ${playerName}?${banReason ? ` Reason: ${banReason}` : ''}`;
+                    break;
+                case 'pardon':
+                    command = `pardon ${playerName}`;
+                    successMessage = `Player ${playerName} has been unbanned`;
+                    confirmationMessage = `Are you sure you want to unban ${playerName}?`;
+                    break;
+                case 'kick':
+                    const kickReason = document.getElementById('kick-reason').value.trim();
+                    command = `kick ${playerName} ${kickReason || ''}`.trim();
+                    successMessage = `Player ${playerName} has been kicked`;
+                    confirmationMessage = `Are you sure you want to kick ${playerName}?${kickReason ? ` Reason: ${kickReason}` : ''}`;
+                    break;
+                case 'op':
+                    command = `op ${playerName}`;
+                    successMessage = `Player ${playerName} has been opped`;
+                    confirmationMessage = `Are you sure you want to give OP to ${playerName}?`;
+                    break;
+                case 'deop':
+                    command = `deop ${playerName}`;
+                    successMessage = `Player ${playerName} has been deopped`;
+                    confirmationMessage = `Are you sure you want to remove OP from ${playerName}?`;
+                    break;
+                case 'whitelist add':
+                    command = `whitelist add ${playerName}`;
+                    successMessage = `Player ${playerName} has been whitelisted`;
+                    confirmationMessage = `Are you sure you want to whitelist ${playerName}?`;
+                    break;
+                default:
+                    return;
+            }
+
+            // Show confirmation modal
+            const modal = document.getElementById('playerActionModal');
+            document.getElementById('playerActionTitle').textContent = `Confirm ${action}`;
+            document.getElementById('playerActionMessage').textContent = confirmationMessage;
+
+            // Set up confirm button
+            const confirmBtn = document.getElementById('confirmPlayerAction');
+            confirmBtn.onclick = function() {
+                if (ws) {
+                    ws.send(JSON.stringify({
+                        event: 'cmd',
+                        command: command,
+                        containerId: instanceId
+                    }));
+
+                    // Show feedback in console
+                    term.write(`\r\n\u001b[1m\u001b[33m[panel] \u001b[0mExecuted: ${command}\r\n`);
+
+                    // Add to command history
+                    addToCommandHistory(command);
+
+                    // Show success alert
+                    showAlert('success', 'Action Executed', successMessage);
+
+                    // Refresh player list if action affects online status
+                    if (['kick', 'ban'].includes(action)) {
+                        setTimeout(refreshPlayerList, 1000);
+                    }
+
+                    modal.classList.remove('active');
+                } else {
+                    showAlert('error', 'Connection Error', 'Not connected to server');
+                }
+            };
+
+            modal.classList.add('active');
+        }
+
+        function executeCustomCommand() {
+            const command = document.getElementById('custom-command').value.trim();
+            const playerName = document.getElementById('player-name').value.trim();
+
+            if (!command) {
+                showAlert('error', 'Error', 'Please enter a command');
+                return;
+            }
+
+            let fullCommand = command;
+            if (playerName && command.includes('{player}')) {
+                fullCommand = command.replace('{player}', playerName);
+            } else if (playerName && !command.startsWith('/')) {
+                fullCommand = `${command} ${playerName}`;
+            }
+
+            if (ws) {
+                ws.send(JSON.stringify({
+                    event: 'cmd',
+                    command: fullCommand,
+                    containerId: instanceId
+                }));
+
+                term.write(`\r\n\u001b[1m\u001b[33m[panel] \u001b[0mExecuted: ${fullCommand}\r\n`);
+                addToCommandHistory(fullCommand);
+                showAlert('success', 'Command Executed', `Command sent to server: ${fullCommand}`);
+            } else {
+                showAlert('error', 'Connection Error', 'Not connected to server');
+            }
+        }
+
+        function refreshPlayerList() {
+            if (ws) {
+                ws.send(JSON.stringify({
+                    event: 'cmd',
+                    command: 'list',
+                    containerId: instanceId
+                }));
+
+                // Show loading state
+                const onlinePlayersDiv = document.getElementById('players-grid');
+                onlinePlayersDiv.innerHTML = '<div class="col-span-2 flex items-center justify-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400"></div></div>';
+            } else {
+                showAlert('error', 'Connection Error', 'Not connected to server');
+            }
+        }
+
+        function parsePlayerList(message) {
+            // Remove ANSI color codes from the message first
+            const cleanedMessage = message.replace(/\x1B\[[0-9;]*[mK]/g, '');
+
+            const onlinePlayersDiv = document.getElementById('online-players');
+
+            if (cleanedMessage.includes("There are 0/")) {
+                onlinePlayersDiv.innerHTML = '<p class="text-sm text-gray-400 text-center mt-10">No players currently online</p>';
+                return;
+            }
+
+            const playersMatch = cleanedMessage.match(/online: (.*)/);
+            if (playersMatch && playersMatch[1]) {
+                const players = playersMatch[1].split(', ').map(player => player.trim());
+                let html = '<div class="grid grid-cols-2 gap-2">';
+                players.forEach(player => {
+                    // Ensure player name is clean of any remaining ANSI codes
+                    const cleanPlayer = player.replace(/\x1B\[[0-9;]*[mK]/g, '');
+                    if (cleanPlayer) {  // Only add if player name is not empty after cleaning
+                        html += `
+                            <div class="flex items-center justify-between bg-white/5 p-2 rounded">
+                                <span class="text-sm text-white">${cleanPlayer}</span>
+                                <div class="flex space-x-1">
+                                    <button onclick="document.getElementById('player-name').value='${cleanPlayer.replace(/'/g, "\\'")}'; executePlayerAction('kick')" class="text-xs bg-orange-600/50 hover:bg-orange-600 px-1.5 py-0.5 rounded">
+                                        Kick
+                                    </button>
+                                    <button onclick="document.getElementById('player-name').value='${cleanPlayer.replace(/'/g, "\\'")}'; executePlayerAction('ban')" class="text-xs bg-red-600/50 hover:bg-red-600 px-1.5 py-0.5 rounded">
+                                        Ban
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+                html += '</div>';
+                onlinePlayersDiv.innerHTML = html;
+            } else {
+                onlinePlayersDiv.innerHTML = '<p class="text-sm text-gray-400 text-center mt-10">Could not parse player list</p>';
+            }
+        }
+
+        function getRandomPing() {
+            // Generate a realistic ping between 20-150ms
+            return Math.floor(Math.random() * 130) + 20;
+        }
+
+        function addToCommandHistory(command) {
+            const historyElement = document.getElementById('command-history');
+
+            // Check if the default message is still there
+            if (historyElement.innerHTML.includes('No commands executed yet')) {
+                historyElement.innerHTML = '';
+            }
+
+            // Create new entry
+            const entry = document.createElement('div');
+            entry.className = 'flex items-start';
+            entry.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mt-0.5 mr-2 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+                <span class="text-indigo-300 font-mono text-xs break-all">${command}</span>
+            `;
+
+            // Prepend to keep recent commands at top
+            historyElement.prepend(entry);
+
+            // Limit to 10 commands
+            if (historyElement.children.length > 10) {
+                historyElement.removeChild(historyElement.lastChild);
+            }
+        }
+
+        function showAlert(type, title, message) {
+            const alert = document.getElementById('alertToast');
+            const alertIcon = document.getElementById('alertIcon');
+            const alertTitle = document.getElementById('alertTitle');
+            const alertMessage = document.getElementById('alertMessage');
+
+            // Set content
+            alertTitle.textContent = title;
+            alertMessage.textContent = message;
+
+            // Set styles based on type
+            alert.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 transform transition-all duration-300 ${
+                type === 'error' ? 'bg-red-600 text-white' : 
+                type === 'success' ? 'bg-emerald-600 text-white' : 
+                'bg-indigo-600 text-white'
+            }`;
+
+            // Set icon based on type
+            if (type === 'error') {
+                alertIcon.innerHTML = '<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>';
+            } else if (type === 'success') {
+                alertIcon.innerHTML = '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>';
+            } else {
+                alertIcon.innerHTML = '<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>';
+            }
+
+            // Show alert
+            alert.classList.remove('hidden', 'opacity-0', 'translate-x-8');
+            alert.classList.add('opacity-100', 'translate-x-0');
+
+            // Hide after 5 seconds
+            setTimeout(() => {
+                alert.classList.add('opacity-0', 'translate-x-8');
+                setTimeout(() => alert.classList.add('hidden'), 300);
+            }, 5000);
+        }
+
+        // Toggle player management section
+        document.querySelector('.toggle-player-management').addEventListener('click', function() {
+            const section = document.getElementById('player-management');
+            const icon = document.getElementById('toggle-icon');
+
+            section.classList.toggle('collapsed');
+            icon.classList.toggle('rotate-180');
+        });
+
+        // Terminal and WebSocket Code
+        const baseTheme = {
+            foreground: '#c5c9d1',
+            background: 'rgba(0 0 0 / 0)',
+            selection: '#5DA5D533',
+            black: '#1E1E1D',
+            brightBlack: '#262625',
+            red: '#E54B4B',
+            green: '#9ECE58',
+            yellow: '#FAED70',
+            blue: '#396FE2',
+            magenta: '#BB80B3',
+            cyan: '#2DDAFD',
+            white: '#d0d0d0',
+            brightBlack: 'rgba(255, 255, 255, 0.2)',
+            brightRed: '#FF5370',
+            brightGreen: '#C3E88D',
+            brightYellow: '#FFCB6B',
+            brightBlue: '#82AAFF',
+            brightMagenta: '#C792EA',
+            brightCyan: '#89DDFF',
+            brightWhite: '#ffffff',
+        };
+
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const instanceId = '<%= req.params.id %>';
+        let commandHistory = [];
+        let currentCommandIndex = -1;
+        let term;
+        let ws;
+        let statusChart;
+        let uptimeInterval;
+        let currentUptime = 0;
+        let lastStartTime = null;
+        let serverStatus = 'offline';
+        let uptimeHistory = [];
+        let dailyUptime = {};
+
+        // Persistent uptime storage
+        const UPTIME_STORAGE_KEY = `server_uptime_${instanceId}`;
+        const SERVER_STATUS_KEY = `server_status_${instanceId}`;
+        const LAST_START_TIME_KEY = `last_start_time_${instanceId}`;
+
+        function initWebSocket() {
+            const port = window.location.port ? `:${window.location.port}` : '';
+            ws = new WebSocket(`${protocol}://${window.location.hostname}${port}/console/${instanceId}`);
+
+            ws.onopen = () => {
+                console.log('WebSocket connected!');
+                document.getElementById('daemonIsDown').classList.add('hidden');
+            };
+
+            ws.onmessage = handleWebSocketMessage;
+
+            ws.onclose = () => {
+                console.log('WebSocket connection closed, attempting to reconnect...');
+                showAlert('warning', 'Connection Lost', 'Attempting to reconnect...');
+                setTimeout(initWebSocket, 3000);
+            };
+
+            ws.onerror = (error) => {
+                console.log('WebSocket encountered an error:', error, 'Attempting to reconnect...');
+                document.getElementById('daemonIsDown').classList.remove('hidden');
+                setTimeout(initWebSocket, 5000);
+            };
+        }
+
+        function handleWebSocketMessage(msg) {
+            // Check if this is a player list response
+            if (msg.data.includes("There are") && msg.data.includes("players online")) {
+                parsePlayerList(msg.data);
+                return;
+            }
+
+            const lines = msg.data.split('\n');
+            let isFirstLine = true;
+            let previousLineWasEmpty = false;
+
+            lines.forEach(line => {
+                const trimmedLine = line.trim();
+                if (trimmedLine === '' && previousLineWasEmpty) return;
+
+                if (!isFirstLine && !previousLineWasEmpty) {
+                    term.write('\r\n');
+                }
+
+                term.write('\x1b[0m' + trimmedLine);
+
+                if (trimmedLine.includes("Working on")) {
+                    term.write('\r\n\u001b[1m\u001b[33m[panel] \u001b[0mreconnecting socket, hold on...');
+                    term.clear();
+                    ws.close();
+                }
+
+                if (trimmedLine.includes("skyportd instance appears to be down")) {
+                    ws.close();
+                    document.getElementById('daemonIsDown').classList.remove('hidden');
+                } else {
+                    document.getElementById('daemonIsDown').classList.add('hidden');
+                }
+
+                isFirstLine = false;
+                previousLineWasEmpty = (trimmedLine === '');
+            });
+        }
+
+        function setupTerminal() {
+            term = new Terminal({
+                disableStdin: true,
+                allowProposedApi: true,
+                lineHeight: 1.35,
+                rows: 19,
+                cols: 100,
+                fontFamily: 'Menlo, monospace',
+                theme: baseTheme,
+                allowTransparency: true,
+                fontSize: 12,
+            });
+            term.open(document.getElementById('terminal'));
+        }
+
+        function sendCommand() {
+            const inputElement = document.getElementById('input');
+            const command = inputElement.value.trim();
+            if (command && ws) {
+                term.write('\u001b[1m\u001b[33m~ \u001b[0m' + command + '\r\n');
+                ws.send(JSON.stringify({
+                    event: 'cmd',
+                    command: command,
+                    containerId: instanceId
+                }));
+
+                if (commandHistory.length === 10) {
+                    commandHistory.shift();
+                }
+                commandHistory.push(command);
+                currentCommandIndex = commandHistory.length;
+
+                addToCommandHistory(command);
+
+                inputElement.value = '';
+            }
+        }
+
+        function handleKeyUp(event) {
+            const inputElement = document.getElementById('input');
+
+            if (event.key === 'ArrowUp') {
+                if (currentCommandIndex > 0) {
+                    currentCommandIndex--;
+                    inputElement.value = commandHistory[currentCommandIndex];
+                }
+                event.preventDefault();
+            } else if (event.key === 'ArrowDown') {
+                if (currentCommandIndex < commandHistory.length - 1) {
+                    currentCommandIndex++;
+                    inputElement.value = commandHistory[currentCommandIndex];
+                } else {
+                    currentCommandIndex = commandHistory.length;
+                    inputElement.value = '';
+                }
+                event.preventDefault();
+            } else if (event.key === 'Tab') {
+                // Auto-complete player names
+                const currentText = inputElement.value;
+                const players = document.querySelectorAll('.player-card span:first-child');
+
+                if (players.length > 0 && currentText) {
+                    const matches = Array.from(players)
+                        .map(el => el.textContent.trim())
+                        .filter(name => name.toLowerCase().startsWith(currentText.toLowerCase()));
+
+                    if (matches.length === 1) {
+                        inputElement.value = matches[0] + ' ';
+                        event.preventDefault();
+                    }
+                }
+            }
+        }
+
+        async function reinstall() {
+            const instanceId = '<%= req.params.id %>';
+
+            const loadingPopup = document.getElementById('loadingPopup');
+            loadingPopup.classList.add('active');
+            document.getElementById('loadingBar').style.width = '0%';
+            document.getElementById('loadingMessage').textContent = 'Initializing...';
+
+            try {
+                const response = await fetch(`/instance/reinstall/${instanceId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                let progress = 0;
+                const interval = setInterval(() => {
+                    if (progress < 90) {
+                        progress += 10;
+                        document.getElementById('loadingBar').style.width = `${progress}%`;
+                        document.getElementById('loadingMessage').textContent = `Reinstalling server... ${progress}%`;
+                    } else {
+                        clearInterval(interval);
+                    }
+                }, 200);
+
+                if (response.ok) {
+                    setTimeout(() => {
+                        document.getElementById('loadingBar').style.width = '100%';
+                        document.getElementById('loadingMessage').textContent = 'Server reinstalled successfully!';
+                        setTimeout(() => {
+                            loadingPopup.classList.remove('active');
+                            window.location.href = `/instance/${instanceId}/settings`;
+                        }, 1000);
+                    }, 2000);
+                } else {
+                    alert('Error reinstalling server: ' + response.statusText);
+                    loadingPopup.classList.remove('active');
+                }
+            } catch (error) {
+                console.error('Error during POST request:', error);
+                alert('An error occurred.');
+                loadingPopup.classList.remove('active');
+            }
+        }
+
+        function createBackgroundChart(canvasId, type = 'line') {
+            return new Chart(document.getElementById(canvasId).getContext('2d'), {
+                type: type,
+                data: {
+                    labels: Array(10).fill(''),
+                    datasets: [{
+                        data: Array(10).fill(0),
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        borderWidth: 1,
+                        pointRadius: 0,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    },
+                    scales: {
+                        x: { display: false },
+                        y: { 
+                            display: false,
+                            min: 0,
+                            max: 100
+                        }
+                    },
+                    animation: {
+                        duration: 0
+                    }
+                }
+            });
+        }
+
+        function formatUptime(seconds) {
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+
+            return {
+                days,
+                hours,
+                minutes,
+                seconds: secs
+            };
+        }
+
+        function updateUptimeDisplay(seconds) {
+            const { days, hours, minutes, seconds: secs } = formatUptime(seconds);
+
+            document.getElementById('uptime-days').textContent = `${days}d`;
+            document.getElementById('uptime-hours').textContent = `${hours}h`;
+            document.getElementById('uptime-minutes').textContent = `${minutes}m`;
+            document.getElementById('uptime-seconds').textContent = `${secs}s`;
+
+            // Update the bar (max 7 days for 100%)
+            const uptimePercent = Math.min(100, (seconds / 604800) * 100); // 604800 = 7 days
+            document.getElementById('uptime-bar').style.width = `${uptimePercent}%`;
+            document.getElementById('uptime-percent').textContent = `${uptimePercent.toFixed(1)}% uptime`;
+
+            // Save current uptime to localStorage
+            saveUptimeData(seconds);
+        }
+
+        function saveUptimeData(seconds) {
+            const uptimeData = {
+                uptime: seconds,
+                lastUpdated: Date.now(),
+                status: serverStatus
+            };
+            localStorage.setItem(UPTIME_STORAGE_KEY, JSON.stringify(uptimeData));
+        }
+
+        function loadUptimeData() {
+            const savedData = localStorage.getItem(UPTIME_STORAGE_KEY);
+            if (savedData) {
+                return JSON.parse(savedData);
+            }
+            return null;
+        }
+
+        function saveServerStatus(status) {
+            localStorage.setItem(SERVER_STATUS_KEY, status);
+        }
+
+        function loadServerStatus() {
+            return localStorage.getItem(SERVER_STATUS_KEY) || 'offline';
+        }
+
+        function saveLastStartTime(time) {
+            localStorage.setItem(LAST_START_TIME_KEY, time);
+        }
+
+        function loadLastStartTime() {
+            return localStorage.getItem(LAST_START_TIME_KEY);
+        }
+
+        function startUptimeCounter(initialSeconds = 0) {
+            // Clear any existing interval
+            if (uptimeInterval) {
+                clearInterval(uptimeInterval);
+            }
+
+            // Load saved uptime data if available
+            const savedData = loadUptimeData();
+            if (savedData) {
+                // If server was online when last saved, calculate the additional uptime since last update
+                if (savedData.status === 'online') {
+                    const timeSinceLastUpdate = Math.floor((Date.now() - savedData.lastUpdated) / 1000);
+                    currentUptime = savedData.uptime + timeSinceLastUpdate;
+                } else {
+                    currentUptime = savedData.uptime;
+                }
+            } else {
+                currentUptime = initialSeconds;
+            }
+
+            updateUptimeDisplay(currentUptime);
+
+            // Start counting up
+            uptimeInterval = setInterval(() => {
+                currentUptime++;
+                updateUptimeDisplay(currentUptime);
+            }, 1000);
+        }
+
+        function stopUptimeCounter() {
+            if (uptimeInterval) {
+                clearInterval(uptimeInterval);
+                uptimeInterval = null;
+            }
+
+            // Save the current uptime before resetting display
+            saveUptimeData(currentUptime);
+
+            // Reset display
+            document.getElementById('uptime-days').textContent = '0d';
+            document.getElementById('uptime-hours').textContent = '0h';
+            document.getElementById('uptime-minutes').textContent = '0m';
+            document.getElementById('uptime-seconds').textContent = '0s';
+            document.getElementById('uptime-bar').style.width = '0%';
+            document.getElementById('uptime-percent').textContent = '0% uptime';
+        }
+
+        function updateLastStartedTime() {
+            const now = new Date();
+            const options = { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true
+            };
+            const formattedTime = now.toLocaleString(undefined, options);
+            document.getElementById('last-started').textContent = formattedTime;
+            saveLastStartTime(formattedTime);
+        }
+
+        function updateStatus(stats) {
+            const statusElement = document.getElementById('status');
+            const statusDetails = document.getElementById('statusDetails');
+            const ramUsageRaw = stats.memory_stats.usage / 1024 / 1024 || 0;
+
+            if (ramUsageRaw > 1) {
+                if (serverStatus !== 'online') {
+                    serverStatus = 'online';
+                    statusElement.textContent = 'Online';
+                    statusElement.className = 'mt-1 text-2xl font-medium tracking-tight text-emerald-500';
+                    statusDetails.textContent = 'Server is running and responsive';
+                    updateStatusChart('rgba(16, 185, 129, 0.1)', 'rgba(16, 185, 129, 0.2)');
+                    saveServerStatus('online');
+
+                    // Only start uptime counter if it's not already running
+                    if (!uptimeInterval) {
+                        startUptimeCounter(stats.precise_uptime || 0);
+                        updateLastStartedTime();
+                    }
+                }
+            } else {
+                if (serverStatus !== 'offline') {
+                    serverStatus = 'offline';
+                    statusElement.textContent = 'Offline';
+                    statusElement.className = 'mt-1 text-2xl font-medium tracking-tight text-red-500';
+                    statusDetails.textContent = 'Server is not running';
+                    updateStatusChart('rgba(239, 68, 68, 0.1)', 'rgba(239, 68, 68, 0.2)');
+                    saveServerStatus('offline');
+                    stopUptimeCounter();
+                }
+            }
+
+            // Update CPU and Memory
+            if (stats.cpu_stats) {
+                const cpuPercent = calculateCpuPercent(stats);
+                document.getElementById('cpuUsage').textContent = `${cpuPercent.toFixed(1)}%`;
+                document.getElementById('cpu-bar').style.width = `${cpuPercent}%`;
+                document.getElementById('cpu-cores').textContent = stats.cpu_stats.online_cpus || '?';
+
+                // CPU status indicator
+                let cpuStatus = 'Normal';
+                if (cpuPercent > 90) cpuStatus = 'High';
+                else if (cpuPercent > 70) cpuStatus = 'Moderate';
+                document.getElementById('cpu-status').textContent = cpuStatus;
+            }
+
+            if (stats.memory_stats) {
+                const memUsage = stats.memory_stats.usage / 1024 / 1024;
+                const memLimit = stats.memory_stats.limit / 1024 / 1024;
+                const memPercent = (memUsage / memLimit) * 100;
+
+                document.getElementById('memoryUsage').textContent = `${memUsage.toFixed(1)} MB / ${memLimit.toFixed(1)} MB`;
+                document.getElementById('memory-bar').style.width = `${memPercent}%`;
+                document.getElementById('memory-limit').textContent = `${memLimit.toFixed(1)} MB`;
+
+                // Memory status indicator
+                let memStatus = 'Normal';
+                if (memPercent > 90) memStatus = 'High';
+                else if (memPercent > 70) memStatus = 'Moderate';
+                document.getElementById('memory-status').textContent = memStatus;
+            }
+
+            // Update TPS (simulated for now)
+            if (ramUsageRaw > 1) {
+                const tps = 20 - (Math.random() * 0.5); // Simulate good TPS
+                document.getElementById('tps').textContent = tps.toFixed(1);
+                document.getElementById('tps-bar').style.width = `${(tps / 20 * 100)}%`;
+
+                // TPS status indicator
+                let tpsStatus = 'Excellent';
+                if (tps < 15) tpsStatus = 'Poor';
+                else if (tps < 18) tpsStatus = 'Fair';
+                document.getElementById('tps-status').textContent = tpsStatus;
+            } else {
+                document.getElementById('tps').textContent = '0.0';
+                document.getElementById('tps-bar').style.width = '0%';
+                document.getElementById('tps-status').textContent = 'Offline';
+            }
+        }
+
+        function calculateCpuPercent(stats) {
+            const cpuDelta = stats.cpu_stats.cpu_usage.total_usage - stats.precpu_stats.cpu_usage.total_usage;
+            const systemDelta = stats.cpu_stats.system_cpu_usage - stats.precpu_stats.system_cpu_usage;
+            const cpuPercent = (cpuDelta / systemDelta) * stats.cpu_stats.online_cpus * 100;
+            return cpuPercent || 0;
+        }
+
+        function updateStatusChart(backgroundColor, borderColor) {
+            if (statusChart && statusChart.data && statusChart.data.datasets && statusChart.data.datasets[0]) {
+                statusChart.data.datasets[0].backgroundColor = backgroundColor;
+                statusChart.data.datasets[0].borderColor = borderColor;
+                statusChart.update();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            setupTerminal();
+            initWebSocket();
+
+            // Initialize status chart
+            statusChart = createBackgroundChart('statusChart');
+
+            const inputElement = document.getElementById('input');
+            inputElement.addEventListener('keypress', function (event) {
+                if (event.key === 'Enter') {
+                    sendCommand();
+                }
+            });
+
+            inputElement.addEventListener('keydown', handleKeyUp);
+
+            // Power button events
+            ['start', 'stop', 'restart'].forEach(action => {
+                document.getElementById(`${action}Button`).addEventListener('click', function () {
+                    if (ws) {
+                        ws.send(JSON.stringify({
+                            event: `power:${action}`,
+                            containerId: instanceId
+                        }));
+
+                        showAlert('info', 'Action Sent', `Server ${action} command sent`);
+
+                        // Update uptime counter based on action
+                        if (action === 'start') {
+                            updateLastStartedTime();
+                            setTimeout(() => {
+                                // Wait a few seconds for server to start before checking status
+                                if (statsWs) statsWs.send('refresh');
+                            }, 5000);
+                        } else if (action === 'stop') {
+                            stopUptimeCounter();
+                        }
+                    } else {
+                        showAlert('error', 'Connection Error', 'Not connected to server');
+                    }
+                });
+            });
+
+            initStatsWebSocket();
+
+            // Initial player list refresh
+            setTimeout(refreshPlayerList, 2000);
+
+            // Save name button
+            document.getElementById('save').addEventListener('click', function() {
+                const name = document.getElementById('name').value;
+                window.location.href = '/instance/<%= req.params.id %>/change/name/' + name;
+            });
+
+            // Load saved last start time if available
+            const savedStartTime = loadLastStartTime();
+            if (savedStartTime) {
+                document.getElementById('last-started').textContent = savedStartTime;
+            }
+
+            // Initialize uptime display based on saved status
+            const savedStatus = loadServerStatus();
+            if (savedStatus === 'online') {
+                // Start with 0 seconds, the stats update will correct this shortly
+                startUptimeCounter(0);
+            } else {
+                stopUptimeCounter();
+            }
+        });
+
+        function isValidJson(str) {
+            try {
+              JSON.parse(str);
+            } catch (e) {
+              return false;
+            }
+            return true;
+        }
+
+        let statsWs;
+        function initStatsWebSocket() {
+            const port = window.location.port ? `:${window.location.port}` : '';
+            statsWs = new WebSocket(`${protocol}://${window.location.hostname}${port}/stats/${instanceId}`);
+
+            statsWs.onmessage = event => {
+                if (isValidJson(event.data)) {
+                    const stats = JSON.parse(event.data);
+                    if (stats.error) {
+                        console.error('Error fetching stats:', stats.error);
+                        return;
+                    }
+
+                    updateStatus(stats);
+                } else {
+                    console.log('Received non-JSON data:', event.data);
+                }
+            };
+
+            statsWs.onclose = () => {
+                console.log('WebSocket Stats connection closed, attempting to reconnect...');
+                setTimeout(initStatsWebSocket, 3000);
+            };
+
+            statsWs.onerror = (error) => {
+                console.log('WebSocket Stats encountered an error:', error);
+                setTimeout(initStatsWebSocket, 5000);
+            };
+        }
+    </script>
+
+    <%- include('../components/footer') %>
